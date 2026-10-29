@@ -528,16 +528,68 @@
     });
   }
 
-  /* ---- 18. Fallback (No GSAP / Reduced Motion) -------------- */
+  /* ---- 18. Robust Lazy Images & ScrollTrigger Auto-Refresh --- */
+  function initLazyImages() {
+    const images = $$('.art img, .member .ph img, img[loading="lazy"]');
+    if (!images.length) return;
+
+    let refreshTimeout = null;
+    const scheduleRefresh = () => {
+      if (!hasGsap) return;
+      clearTimeout(refreshTimeout);
+      refreshTimeout = setTimeout(() => {
+        ScrollTrigger.refresh();
+      }, 100);
+    };
+
+    const markLoaded = img => {
+      img.classList.add('loaded');
+      const box = img.closest('.img, .ph');
+      if (box) box.classList.add('img-ready');
+      scheduleRefresh();
+    };
+
+    // Preload lookahead observer so below-the-fold images load before clipPath reveals
+    let observer = null;
+    if ('IntersectionObserver' in window) {
+      observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const img = entry.target;
+            if (img.decode) {
+              img.decode().catch(() => {}).finally(() => markLoaded(img));
+            } else if (img.complete) {
+              markLoaded(img);
+            }
+            observer.unobserve(img);
+          }
+        });
+      }, { rootMargin: '350px 0px 350px 0px' });
+    }
+
+    images.forEach(img => {
+      if (img.complete && img.naturalWidth > 0) {
+        markLoaded(img);
+      } else {
+        img.addEventListener('load', () => markLoaded(img), { once: true });
+        img.addEventListener('error', () => markLoaded(img), { once: true });
+        if (observer) observer.observe(img);
+      }
+    });
+  }
+
+  /* ---- 19. Fallback (No GSAP / Reduced Motion) -------------- */
   function showAll() {
     $$('.img').forEach(e => { e.style.clipPath = 'none'; });
     $$('.art').forEach(e => { e.style.transform = 'none'; });
+    $$('.art img, .member .ph img').forEach(e => { e.classList.add('loaded'); });
+    $$('.img, .ph').forEach(e => { e.classList.add('img-ready'); });
     $$('[data-count]').forEach(el => {
       el.textContent = String(el.dataset.count).padStart(el.dataset.pad ? 2 : 0, '0');
     });
   }
 
-  /* ---- 19. Boot Engine -------------------------------------- */
+  /* ---- 20. Boot Engine -------------------------------------- */
   initLiveClock();
   initNav();
   initMenu();
@@ -547,6 +599,7 @@
   initForm();
   initCopyPills();
   initTopButton();
+  initLazyImages();
 
   if (!hasGsap || reduce) {
     showAll();

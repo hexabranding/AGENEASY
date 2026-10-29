@@ -35,7 +35,7 @@
     if (a.children.length) return; a.addEventListener('mouseenter', () => scramble(a));
   });
 
-  const targets = document.querySelectorAll('.proj, .svc, .stats > *, .who > *, .quote, blockquote, .step, .faq > *, .row, .work-filters');
+  const targets = document.querySelectorAll('.svc, .stats > *, .who > *, .quote, blockquote, .step, .faq > *, .row, .work-filters');
   if ('IntersectionObserver' in window && !reduce) {
     const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { setTimeout(() => e.target.classList.add('fx-vis'), (e.target._d || 0)); io.unobserve(e.target); } }), { threshold: .12 });
     targets.forEach((t, i) => { if (t.closest('.hero')) return; t._d = (i % 3) * 90; t.classList.add('fx-in'); io.observe(t); });
